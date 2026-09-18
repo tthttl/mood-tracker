@@ -36,7 +36,7 @@ class RoundServiceTest {
 	@BeforeEach
 	void setUp() {
 		roundService = new RoundService(groupRepository);
-		group = Group.reconstitute("group-1", new Name("Team A"), new MoodRange(1),
+		group = Group.of("group-1", new Name("Team A"), new MoodRange(1),
 				List.of(new Member(new Email("a@test.com")), new Member(new Email("b@test.com"))), List.of());
 	}
 

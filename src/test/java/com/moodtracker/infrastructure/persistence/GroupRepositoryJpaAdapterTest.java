@@ -25,7 +25,7 @@ class GroupRepositoryJpaAdapterTest {
 
 	@Test
 	void savesAndReloadsAGroupWithAClosedRoundThroughRealH2() {
-		Group group = new Group(new Name("Team A"), new MoodRange(1),
+		Group group = Group.create(new Name("Team A"), new MoodRange(1),
 				List.of("a@test.com", "b@test.com"));
 		Round round = group.startRound("a@test.com");
 		round.submit("a@test.com", -1);
@@ -50,8 +50,8 @@ class GroupRepositoryJpaAdapterTest {
 
 	@Test
 	void findAllReturnsEveryPersistedGroup() {
-		Group persistedGroupA = adapter().save(new Group(new Name("A"), new MoodRange(1), List.of("a@test.com")));
-		Group persistedGroupB = adapter().save(new Group(new Name("B"), new MoodRange(1), List.of("b@test.com")));
+		Group persistedGroupA = adapter().save(Group.create(new Name("A"), new MoodRange(1), List.of("a@test.com")));
+		Group persistedGroupB = adapter().save(Group.create(new Name("B"), new MoodRange(1), List.of("b@test.com")));
 
 		assertThat(adapter().findAll()).extracting(group -> group.id()).containsExactlyInAnyOrder(persistedGroupA.id(),
 				persistedGroupB.id());

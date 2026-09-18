@@ -16,7 +16,7 @@ class GroupEntityMapperTest {
 
 	@Test
 	void roundTripsAGroupWithAClosedRound() {
-		Group group = new Group(new Name("Team A"), new MoodRange(1), List.of("a@test.com", "b@test.com"));
+		Group group = Group.create(new Name("Team A"), new MoodRange(1), List.of("a@test.com", "b@test.com"));
 		group.addMember("c@test.com");
 		Round round = group.startRound("a@test.com");
 		round.submit("a@test.com", -1);
@@ -26,7 +26,8 @@ class GroupEntityMapperTest {
 		GroupJpaEntity entity = GroupEntityMapper.toEntity(group);
 		Group reconstructed = GroupEntityMapper.toDomain(entity);
 
-		// group/round ids are assigned by the database on save, not by this pure mapper,
+		// group/round ids are assigned by the database on save, not by this pure
+		// mapper,
 		// so a group that was never actually persisted round-trips with a null id.
 		assertThat(reconstructed.id()).isNull();
 		assertThat(reconstructed.name()).isEqualTo(new Name("Team A"));
@@ -50,7 +51,7 @@ class GroupEntityMapperTest {
 
 	@Test
 	void roundTripsAGroupWithAnOpenRoundAndPartialSubmissions() {
-		Group group = new Group(new Name("Team B"), new MoodRange(2),
+		Group group = Group.create(new Name("Team B"), new MoodRange(2),
 				List.of("a@test.com", "b@test.com", "c@test.com"));
 		Round round = group.startRound("a@test.com");
 		round.submit("a@test.com", 2);
@@ -72,7 +73,7 @@ class GroupEntityMapperTest {
 
 	@Test
 	void preservesPerMemberNotificationPreference() {
-		Group group = new Group(new Name("Team C"), new MoodRange(1), List.of("a@test.com"));
+		Group group = Group.create(new Name("Team C"), new MoodRange(1), List.of("a@test.com"));
 
 		Group reconstructed = GroupEntityMapper.toDomain(GroupEntityMapper.toEntity(group));
 

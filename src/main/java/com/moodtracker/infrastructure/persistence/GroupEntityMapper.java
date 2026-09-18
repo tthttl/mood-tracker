@@ -45,7 +45,7 @@ final class GroupEntityMapper {
 		List<Round> rounds = entity.getRounds().stream()
 				.map(round -> toDomain(round, entity.getId()))
 				.toList();
-		return Group.reconstitute(entity.getId(), new Name(entity.getName()), new MoodRange(entity.getMoodRange()),
+		return Group.of(entity.getId(), new Name(entity.getName()), new MoodRange(entity.getMoodRange()),
 				members, rounds);
 	}
 

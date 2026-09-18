@@ -21,7 +21,7 @@ public class GroupService {
 
 	@Transactional
 	public Group createGroup(String name, int moodRange, List<String> memberEmails) {
-		Group group = new Group(new Name(name), new MoodRange(moodRange), memberEmails);
+		Group group = Group.create(new Name(name), new MoodRange(moodRange), memberEmails);
 		return groupRepository.save(group);
 	}
 

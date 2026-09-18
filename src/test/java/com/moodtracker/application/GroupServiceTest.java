@@ -53,7 +53,7 @@ class GroupServiceTest {
 
 	@Test
 	void addMemberLoadsMutatesAndSavesTheGroup() {
-		Group existing = Group.reconstitute("group-1", new Name("Team A"), new MoodRange(1),
+		Group existing = Group.of("group-1", new Name("Team A"), new MoodRange(1),
 				List.of(new Member(new Email("a@test.com"))), List.of());
 		when(groupRepository.findById("group-1")).thenReturn(Optional.of(existing));
 		when(groupRepository.save(existing)).thenReturn(existing);

@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class RoundTest {
 
 	private static Group groupOf(int moodRange, String... emails) {
-		return new Group(new Name("Team A"), new MoodRange(moodRange), List.of(emails));
+		return Group.create(new Name("Team A"), new MoodRange(moodRange), List.of(emails));
 	}
 
 	@Test

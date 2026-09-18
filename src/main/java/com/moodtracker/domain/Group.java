@@ -18,10 +18,6 @@ public final class Group {
 	private final Members members;
 	private final List<Round> rounds;
 
-	public Group(Name name, MoodRange moodRange, List<String> memberEmails) {
-		this(null, name, moodRange, Members.of(memberEmails), List.of());
-	}
-
 	private Group(String id, Name name, MoodRange moodRange, Members members, List<Round> rounds) {
 		this.id = id;
 		this.name = name;
@@ -30,9 +26,13 @@ public final class Group {
 		this.rounds = new ArrayList<>(rounds);
 	}
 
-	public static Group reconstitute(String id, Name name, MoodRange moodRange, List<Member> members,
+	public static Group of(String id, Name name, MoodRange moodRange, List<Member> members,
 			List<Round> rounds) {
 		return new Group(id, name, moodRange, Members.from(members), rounds);
+	}
+
+	public static Group create(Name name, MoodRange moodRange, List<String> memberEmails) {
+		return new Group(null, name, moodRange, Members.of(memberEmails), List.of());
 	}
 
 	public Round startRound(String startedByEmail) {
