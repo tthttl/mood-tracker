@@ -1,0 +1,456 @@
+openapi: 3.0.3
+info:
+  title: Mood Tracker API
+  version: 1.0.0
+  description: |
+    Lets a group (including distributed groups) measure its mood in anonymous rounds.
+
+    **Rounds.** Any member can start a round. Every member submits one mood value in
+    `-n..+n` (n is set per group). The round closes automatically when the last member
+    has submitted; only then are the aggregates (min, max, average) visible. Individual
+    values are never returned by any endpoint.
+
+    **Authentication.** There are no accounts. A member proves they own their email by
+    requesting a single-use verification code (sent by email) and sending it together
+    with the email in the body of each authenticated request. A code is consumed even if
+    the request is afterwards rejected (e.g. duplicate submission, value out of range);
+    request a new one in that case.
+servers:
+  - url: /api/v1
+
+tags:
+  - name: Groups
+    description: Group setup and membership
+  - name: Auth
+    description: Email verification codes
+  - name: Rounds
+    description: Voting rounds and their results
+
+paths:
+  /groups:
+    post:
+      tags: [Groups]
+      operationId: createGroup
+      summary: Create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        '201':
+          description: Group created
+          headers:
+            Location:
+              description: URL of the created group
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /groups/{groupId}:
+    get:
+      tags: [Groups]
+      operationId: getGroup
+      summary: Get a group
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: The group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /groups/{groupId}/members:
+    post:
+      tags: [Groups]
+      operationId: addMember
+      summary: Add a member to a group
+      description: Must be authorised by an existing member (email + verification code).
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+      responses:
+        '200':
+          description: The group including the new member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /groups/{groupId}/verification-codes:
+    post:
+      tags: [Auth]
+      operationId: requestVerificationCode
+      summary: Request a verification code by email
+      description: |
+        Sends a single-use code to the given email if it belongs to a member of the group.
+        Always answers 204, whether or not the email is a member, so the endpoint cannot
+        be used to find out who is in a group.
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestVerificationCodeRequest'
+      responses:
+        '204':
+          description: Request accepted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /groups/{groupId}/rounds:
+    post:
+      tags: [Rounds]
+      operationId: startRound
+      summary: Start a voting round
+      description: Fails with 409 if the group already has an open round.
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartRoundRequest'
+      responses:
+        '201':
+          description: Round started
+          headers:
+            Location:
+              description: URL of the open round
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoundStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      tags: [Rounds]
+      operationId: getRoundHistory
+      summary: Result history of all closed rounds, oldest first
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: Aggregated results per closed round
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoundHistoryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /groups/{groupId}/rounds/current:
+    get:
+      tags: [Rounds]
+      operationId: getCurrentRound
+      summary: Status of the open round
+      description: Shows who has submitted so far, never what they submitted.
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: The open round
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoundStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /groups/{groupId}/rounds/current/submissions:
+    post:
+      tags: [Rounds]
+      operationId: submitMood
+      summary: Submit a mood value to the open round
+      description: |
+        The response is the round status; once this submission closes the round it also
+        contains the round result.
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitMoodRequest'
+      responses:
+        '200':
+          description: Submission accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoundStatusResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  parameters:
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Verification code missing, wrong, expired or already used
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: The email is not a member of the group
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: The request conflicts with the current state
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    MemberEmail:
+      type: string
+      format: email
+      minLength: 3
+      maxLength: 254
+      example: alex@example.com
+
+    VerificationCode:
+      type: string
+      pattern: '^[0-9]{6}$'
+      example: '042917'
+
+    CreateGroupRequest:
+      type: object
+      required: [name, memberEmails]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: '.*\S.*'
+          example: Team Rocket
+        moodRange:
+          type: integer
+          format: int32
+          minimum: 1
+          default: 1
+          description: n - mood values range from -n to +n
+        memberEmails:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/MemberEmail'
+
+    AddMemberRequest:
+      type: object
+      required: [requesterEmail, code, newMemberEmail]
+      properties:
+        requesterEmail:
+          $ref: '#/components/schemas/MemberEmail'
+        code:
+          $ref: '#/components/schemas/VerificationCode'
+        newMemberEmail:
+          $ref: '#/components/schemas/MemberEmail'
+
+    RequestVerificationCodeRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          $ref: '#/components/schemas/MemberEmail'
+
+    StartRoundRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          $ref: '#/components/schemas/MemberEmail'
+        code:
+          $ref: '#/components/schemas/VerificationCode'
+
+    SubmitMoodRequest:
+      type: object
+      required: [email, code, value]
+      properties:
+        email:
+          $ref: '#/components/schemas/MemberEmail'
+        code:
+          $ref: '#/components/schemas/VerificationCode'
+        value:
+          type: integer
+          format: int32
+          description: Must be within -n..+n of the group; checked against the group's range.
+
+    GroupResponse:
+      type: object
+      required: [id, name, moodRange, memberEmails]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        moodRange:
+          type: integer
+          format: int32
+        memberEmails:
+          type: array
+          items:
+            type: string
+            format: email
+
+    RoundResultResponse:
+      type: object
+      required: [roundId, closedAt, min, max, average, submissionCount]
+      properties:
+        roundId:
+          type: string
+        closedAt:
+          type: string
+          format: date-time
+        min:
+          type: integer
+          format: int32
+        max:
+          type: integer
+          format: int32
+        average:
+          type: number
+          format: double
+        submissionCount:
+          type: integer
+          format: int32
+
+    RoundStatusResponse:
+      type: object
+      required: [roundId, status, startedBy, startedAt, submittedMemberEmails, pendingMemberEmails]
+      properties:
+        roundId:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, CLOSED]
+        startedBy:
+          type: string
+          format: email
+        startedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          description: Only present once the round is closed.
+        submittedMemberEmails:
+          type: array
+          items:
+            type: string
+            format: email
+        pendingMemberEmails:
+          type: array
+          items:
+            type: string
+            format: email
+        result:
+          $ref: '#/components/schemas/RoundResultResponse'
+
+    RoundHistoryResponse:
+      type: object
+      required: [rounds]
+      properties:
+        rounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoundResultResponse'
+
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [status, error, message]
+      properties:
+        status:
+          type: integer
+          format: int32
+        error:
+          type: string
+          description: Machine-readable error code, e.g. INVALID_VERIFICATION_CODE, NOT_A_GROUP_MEMBER, ROUND_ALREADY_OPEN.
+        message:
+          type: string
+        fieldErrors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
