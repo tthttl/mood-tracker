@@ -6,6 +6,7 @@ import com.moodtracker.domain.Member;
 import com.moodtracker.domain.MoodRange;
 import com.moodtracker.domain.Name;
 import com.moodtracker.domain.Round;
+import com.moodtracker.domain.Submission;
 import com.moodtracker.infrastructure.persistence.entity.GroupJpaEntity;
 import com.moodtracker.infrastructure.persistence.entity.MemberEmbeddable;
 import com.moodtracker.infrastructure.persistence.entity.RoundJpaEntity;
@@ -31,7 +32,7 @@ final class GroupEntityMapper {
 	}
 
 	private static RoundJpaEntity toEntity(Round round) {
-		List<SubmissionEmbeddable> submissions = round.submissionsForPersistence().stream()
+		List<SubmissionEmbeddable> submissions = round.getSubmissions().stream()
 				.map(s -> new SubmissionEmbeddable(s.email(), s.value(), s.submittedAt()))
 				.toList();
 		return new RoundJpaEntity(round.id(), round.moodRange().value(), round.eligibleMemberEmails(),
@@ -50,10 +51,10 @@ final class GroupEntityMapper {
 	}
 
 	private static Round toDomain(RoundJpaEntity entity, String groupId) {
-		List<Round.SubmissionRecord> submissions = entity.getSubmissions().stream()
-				.map(s -> new Round.SubmissionRecord(s.getEmail(), s.getValue(), s.getSubmittedAt()))
+		List<Submission> submissions = entity.getSubmissions().stream()
+				.map(s -> new Submission(s.getEmail(), s.getValue(), s.getSubmittedAt()))
 				.toList();
-		return Round.reconstitute(entity.getId(), groupId, new MoodRange(entity.getMoodRange()),
+		return Round.of(entity.getId(), groupId, new MoodRange(entity.getMoodRange()),
 				entity.getEligibleMemberEmails(), entity.getStartedBy(), entity.getStartedAt(),
 				entity.getClosedAt(), submissions);
 	}

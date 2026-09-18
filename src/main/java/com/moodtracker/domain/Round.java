@@ -11,22 +11,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class Round {
 
 	public enum Status {
 		OPEN, CLOSED
-	}
-
-	private record Submission(String email, int value, Instant submittedAt) {
-	}
-
-	/**
-	 * For persistence reconstruction only — application/API code must never use
-	 * this;
-	 * use {@link #result()} or {@link #submittedMemberEmails()} instead.
-	 */
-	public record SubmissionRecord(String email, int value, Instant submittedAt) {
 	}
 
 	private final String id;
@@ -35,39 +26,37 @@ public final class Round {
 	private final Set<String> eligibleMemberEmails;
 	private final String startedBy;
 	private final Instant startedAt;
-	private final Map<String, Submission> submissions = new LinkedHashMap<>();
+	private final Map<String, Submission> submissions;
+
 	private Instant closedAt;
 
-	Round(String groupId, MoodRange moodRange, Set<String> eligibleMemberEmails, String startedBy) {
-		this(null, groupId, moodRange, eligibleMemberEmails, startedBy, Instant.now());
-	}
-
 	private Round(String id, String groupId, MoodRange moodRange, Set<String> eligibleMemberEmails,
-			String startedBy, Instant startedAt) {
+			String startedBy, Instant startedAt, Instant closedAt, Map<String, Submission> submissions) {
 		this.id = id;
 		this.groupId = groupId;
 		this.moodRange = moodRange;
 		this.eligibleMemberEmails = Set.copyOf(eligibleMemberEmails);
 		this.startedBy = startedBy;
 		this.startedAt = startedAt;
+		this.closedAt = closedAt;
+		this.submissions = submissions;
 	}
 
-	/**
-	 * Rebuilds a round in whatever state stored data describes, bypassing
-	 * {@link #submit}'s
-	 * validation since the data was already validated when it was first written.
-	 * For persistence reconstruction only.
-	 */
-	public static Round reconstitute(String id, String groupId, MoodRange moodRange,
-			Set<String> eligibleMemberEmails, String startedBy, Instant startedAt, Instant closedAt,
-			List<SubmissionRecord> submissions) {
-		Round round = new Round(id, groupId, moodRange, eligibleMemberEmails, startedBy, startedAt);
-		for (SubmissionRecord submission : submissions) {
-			round.submissions.put(submission.email(),
-					new Submission(submission.email(), submission.value(), submission.submittedAt()));
-		}
-		round.closedAt = closedAt;
-		return round;
+	public static Round create(String groupId, MoodRange moodRange, Set<String> eligibleMemberEmails,
+			String startedBy) {
+		return new Round(null, groupId, moodRange, eligibleMemberEmails, startedBy, Instant.now(), null,
+				new LinkedHashMap<>());
+	}
+
+	public static Round of(String id, String groupId, MoodRange moodRange, Set<String> eligibleMemberEmails,
+			String startedBy, Instant startedAt, Instant closedAt, List<Submission> submissions) {
+		return new Round(id, groupId, moodRange, eligibleMemberEmails, startedBy, startedAt, closedAt,
+				convertSubmissionListToMap(submissions));
+	}
+
+	private static Map<String, Submission> convertSubmissionListToMap(List<Submission> submissions) {
+		return submissions.stream()
+				.collect(Collectors.toMap(Submission::email, Function.identity(), (e1, e2) -> e2, LinkedHashMap::new));
 	}
 
 	public void submit(String email, int value) {
@@ -103,22 +92,15 @@ public final class Round {
 		return moodRange;
 	}
 
-	/**
-	 * For persistence reconstruction only — application/API code must never call
-	 * this;
-	 * use {@link #result()} or {@link #submittedMemberEmails()} instead.
-	 */
-	public List<SubmissionRecord> submissionsForPersistence() {
-		return submissions.values().stream()
-				.map(s -> new SubmissionRecord(s.email(), s.value(), s.submittedAt()))
-				.toList();
+	public List<Submission> getSubmissions() {
+		return List.copyOf(submissions.values());
 	}
 
 	public RoundResult result() {
 		if (status() == Status.OPEN) {
 			throw new RoundStillOpenException(id);
 		}
-		var values = submissions.values().stream().map(t -> t.value()).toList();
+		var values = submissions.values().stream().map(Submission::value).toList();
 		return RoundResult.from(id, values, closedAt);
 	}
 

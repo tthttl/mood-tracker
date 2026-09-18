@@ -42,7 +42,7 @@ public final class Group {
 		if (currentRound().isPresent()) {
 			throw new RoundAlreadyOpenException(id);
 		}
-		Round round = new Round(id, moodRange, members.emails(), startedByEmail);
+		Round round = Round.create(id, moodRange, members.emails(), startedByEmail);
 		rounds.add(round);
 		return round;
 	}
