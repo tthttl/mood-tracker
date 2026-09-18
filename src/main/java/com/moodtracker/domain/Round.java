@@ -8,6 +8,7 @@ import com.moodtracker.domain.exception.RoundStillOpenException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,6 +21,14 @@ public final class Round {
 	private record Submission(String email, int value, Instant submittedAt) {
 	}
 
+	/**
+	 * For persistence reconstruction only — application/API code must never use
+	 * this;
+	 * use {@link #result()} or {@link #submittedMemberEmails()} instead.
+	 */
+	public record SubmissionRecord(String email, int value, Instant submittedAt) {
+	}
+
 	private final String id;
 	private final String groupId;
 	private final MoodRange moodRange;
@@ -29,14 +38,36 @@ public final class Round {
 	private final Map<String, Submission> submissions = new LinkedHashMap<>();
 	private Instant closedAt;
 
-	Round(String id, String groupId, MoodRange moodRange, Set<String> eligibleMemberEmails,
-			String startedBy) {
+	Round(String groupId, MoodRange moodRange, Set<String> eligibleMemberEmails, String startedBy) {
+		this(null, groupId, moodRange, eligibleMemberEmails, startedBy, Instant.now());
+	}
+
+	private Round(String id, String groupId, MoodRange moodRange, Set<String> eligibleMemberEmails,
+			String startedBy, Instant startedAt) {
 		this.id = id;
 		this.groupId = groupId;
 		this.moodRange = moodRange;
 		this.eligibleMemberEmails = Set.copyOf(eligibleMemberEmails);
 		this.startedBy = startedBy;
-		this.startedAt = Instant.now();
+		this.startedAt = startedAt;
+	}
+
+	/**
+	 * Rebuilds a round in whatever state stored data describes, bypassing
+	 * {@link #submit}'s
+	 * validation since the data was already validated when it was first written.
+	 * For persistence reconstruction only.
+	 */
+	public static Round reconstitute(String id, String groupId, MoodRange moodRange,
+			Set<String> eligibleMemberEmails, String startedBy, Instant startedAt, Instant closedAt,
+			List<SubmissionRecord> submissions) {
+		Round round = new Round(id, groupId, moodRange, eligibleMemberEmails, startedBy, startedAt);
+		for (SubmissionRecord submission : submissions) {
+			round.submissions.put(submission.email(),
+					new Submission(submission.email(), submission.value(), submission.submittedAt()));
+		}
+		round.closedAt = closedAt;
+		return round;
 	}
 
 	public void submit(String email, int value) {
@@ -62,6 +93,25 @@ public final class Round {
 
 	public Set<String> submittedMemberEmails() {
 		return Collections.unmodifiableSet(submissions.keySet());
+	}
+
+	public Set<String> eligibleMemberEmails() {
+		return eligibleMemberEmails;
+	}
+
+	public MoodRange moodRange() {
+		return moodRange;
+	}
+
+	/**
+	 * For persistence reconstruction only — application/API code must never call
+	 * this;
+	 * use {@link #result()} or {@link #submittedMemberEmails()} instead.
+	 */
+	public List<SubmissionRecord> submissionsForPersistence() {
+		return submissions.values().stream()
+				.map(s -> new SubmissionRecord(s.email(), s.value(), s.submittedAt()))
+				.toList();
 	}
 
 	public RoundResult result() {

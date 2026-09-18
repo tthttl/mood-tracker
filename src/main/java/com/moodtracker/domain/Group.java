@@ -13,26 +13,47 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 public final class Group {
 
 	private final String id;
-	private Name name;
+	private final Name name;
 	private final MoodRange moodRange;
 	private final Map<String, Member> members = new LinkedHashMap<>();
 	private final List<Round> rounds = new ArrayList<>();
 
-	public Group(String id, Name name, MoodRange moodRange, List<String> memberEmails) {
+	public Group(Name name, MoodRange moodRange, List<String> memberEmails) {
+		this(null, name, moodRange);
 		if (memberEmails == null || memberEmails.isEmpty()) {
 			throw new InvalidGroupConfigurationException("A group needs at least one member");
 		}
-		this.id = id;
-		this.name = name;
-		this.moodRange = moodRange;
 		for (String email : memberEmails) {
 			addMember(email);
 		}
+	}
+
+	private Group(String id, Name name, MoodRange moodRange) {
+		this.id = id;
+		this.name = name;
+		this.moodRange = moodRange;
+	}
+
+	/**
+	 * Rebuilds a group with its original members (preserving per-member
+	 * notification
+	 * preference) and round history, bypassing constructor validation since the
+	 * data was
+	 * already validated when it was first written. For persistence reconstruction
+	 * only.
+	 */
+	public static Group reconstitute(String id, Name name, MoodRange moodRange, List<Member> members,
+			List<Round> rounds) {
+		Group group = new Group(id, name, moodRange);
+		for (Member member : members) {
+			group.members.put(member.email().value(), member);
+		}
+		group.rounds.addAll(rounds);
+		return group;
 	}
 
 	public Round startRound(String startedByEmail) {
@@ -42,7 +63,7 @@ public final class Group {
 		if (currentRound().isPresent()) {
 			throw new RoundAlreadyOpenException(id);
 		}
-		Round round = new Round(UUID.randomUUID().toString(), id, moodRange, members.keySet(), startedByEmail);
+		Round round = new Round(id, moodRange, members.keySet(), startedByEmail);
 		rounds.add(round);
 		return round;
 	}
@@ -57,6 +78,10 @@ public final class Group {
 
 	public List<Round> closedRounds() {
 		return rounds.stream().filter(r -> r.status() == Round.Status.CLOSED).toList();
+	}
+
+	public List<Round> rounds() {
+		return Collections.unmodifiableList(rounds);
 	}
 
 	public void addMember(String email) {

@@ -18,7 +18,7 @@ class GroupTest {
 	private static final List<String> TWO_MEMBERS = List.of("a@test.com", "b@test.com");
 
 	private static Group createGroup(List<String> memberEmails) {
-		return new Group("g1", NAME, MOOD_RANGE, memberEmails);
+		return new Group(NAME, MOOD_RANGE, memberEmails);
 	}
 
 	private static Group defaultGroup() {
