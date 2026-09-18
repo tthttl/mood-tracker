@@ -1,16 +1,12 @@
 package com.moodtracker.domain;
 
-import com.moodtracker.domain.exception.DuplicateMemberException;
-import com.moodtracker.domain.exception.InvalidGroupConfigurationException;
 import com.moodtracker.domain.exception.NotAGroupMemberException;
 import com.moodtracker.domain.exception.RoundAlreadyOpenException;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -19,51 +15,34 @@ public final class Group {
 	private final String id;
 	private final Name name;
 	private final MoodRange moodRange;
-	private final Map<String, Member> members = new LinkedHashMap<>();
-	private final List<Round> rounds = new ArrayList<>();
+	private final Members members;
+	private final List<Round> rounds;
 
 	public Group(Name name, MoodRange moodRange, List<String> memberEmails) {
-		this(null, name, moodRange);
-		if (memberEmails == null || memberEmails.isEmpty()) {
-			throw new InvalidGroupConfigurationException("A group needs at least one member");
-		}
-		for (String email : memberEmails) {
-			addMember(email);
-		}
+		this(null, name, moodRange, Members.of(memberEmails), List.of());
 	}
 
-	private Group(String id, Name name, MoodRange moodRange) {
+	private Group(String id, Name name, MoodRange moodRange, Members members, List<Round> rounds) {
 		this.id = id;
 		this.name = name;
 		this.moodRange = moodRange;
+		this.members = members;
+		this.rounds = new ArrayList<>(rounds);
 	}
 
-	/**
-	 * Rebuilds a group with its original members (preserving per-member
-	 * notification
-	 * preference) and round history, bypassing constructor validation since the
-	 * data was
-	 * already validated when it was first written. For persistence reconstruction
-	 * only.
-	 */
 	public static Group reconstitute(String id, Name name, MoodRange moodRange, List<Member> members,
 			List<Round> rounds) {
-		Group group = new Group(id, name, moodRange);
-		for (Member member : members) {
-			group.members.put(member.email().value(), member);
-		}
-		group.rounds.addAll(rounds);
-		return group;
+		return new Group(id, name, moodRange, Members.from(members), rounds);
 	}
 
 	public Round startRound(String startedByEmail) {
-		if (!members.containsKey(startedByEmail)) {
+		if (!members.contains(startedByEmail)) {
 			throw new NotAGroupMemberException(startedByEmail);
 		}
 		if (currentRound().isPresent()) {
 			throw new RoundAlreadyOpenException(id);
 		}
-		Round round = new Round(id, moodRange, members.keySet(), startedByEmail);
+		Round round = new Round(id, moodRange, members.emails(), startedByEmail);
 		rounds.add(round);
 		return round;
 	}
@@ -85,9 +64,7 @@ public final class Group {
 	}
 
 	public void addMember(String email) {
-		if (members.putIfAbsent(email, new Member(new Email(email))) != null) {
-			throw new DuplicateMemberException(email);
-		}
+		members.add(email);
 	}
 
 	public String id() {
@@ -103,11 +80,11 @@ public final class Group {
 	}
 
 	public Set<String> memberEmails() {
-		return Collections.unmodifiableSet(members.keySet());
+		return members.emails();
 	}
 
 	public Collection<Member> members() {
-		return Collections.unmodifiableCollection(members.values());
+		return members.all();
 	}
 
 }
