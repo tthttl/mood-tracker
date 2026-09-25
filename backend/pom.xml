@@ -101,6 +101,7 @@
 				<version>7.25.0</version>
 				<executions>
 					<execution>
+						<?m2e execute onConfiguration,onIncremental?>
 						<goals>
 							<goal>generate</goal>
 						</goals>
