@@ -1,0 +1,11 @@
+# Local development mail server. Mailpit accepts every message on SMTP :1025 and shows it in
+# a web inbox at http://localhost:8025 — nothing is ever delivered to a real address.
+#
+#   docker compose up -d mailpit
+#   cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=smtp
+services:
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
