@@ -3,7 +3,6 @@ import { firstValueFrom } from 'rxjs';
 import { GroupResponse, GroupsService, RoundResultResponse, RoundStatusResponse, RoundsService } from '../api';
 import { apiErrorMessage, isNotFound } from '../core/api-errors';
 
-/** Read-side state of one group page: the group, its open round and the round history. */
 @Injectable()
 export class GroupStore {
   private readonly groups = inject(GroupsService);
@@ -56,7 +55,6 @@ export class GroupStore {
     }
   }
 
-  // "No open round" is answered with 404 by the API; for the UI that is a normal state.
   private async loadCurrentRound(groupId: string): Promise<RoundStatusResponse | null> {
     try {
       return await firstValueFrom(this.rounds.getCurrentRound({ groupId }));

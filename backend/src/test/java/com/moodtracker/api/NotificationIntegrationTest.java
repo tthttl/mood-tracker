@@ -27,21 +27,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * The whole notification path over HTTP with the SMTP provider switched on, delivering to an
- * in-process SMTP server: verification codes arrive by mail, and starting/closing a round
- * notifies the right members.
- */
 @SpringBootTest(properties = { "moodtracker.mail.provider=smtp", "moodtracker.mail.from=noreply@mood.test",
 		"moodtracker.frontend-base-url=http://mood.test" })
 @AutoConfigureMockMvc
 class NotificationIntegrationTest {
-
 	private static final String ANN = "ann@test.com";
 	private static final String BOB = "bob@test.com";
 	private static final String CY = "cy@test.com";
 
-	// Started once per class: Spring needs the SMTP port when it builds the context, before any test runs.
 	@RegisterExtension
 	static final GreenMailExtension GREEN_MAIL = new GreenMailExtension(ServerSetupTest.SMTP.dynamicPort())
 			.withPerMethodLifecycle(false);
@@ -64,7 +57,6 @@ class NotificationIntegrationTest {
 	void codesArriveByMailAndRoundEventsNotifyTheRightMembers() throws Exception {
 		String groupId = createGroup();
 
-		// starting a round: the other members are notified, the starter is not
 		String startCode = codeFor(groupId, ANN);
 		GREEN_MAIL.purgeEmailFromAllMailboxes();
 		mockMvc.perform(post("/api/v1/groups/{id}/rounds", groupId).contentType(MediaType.APPLICATION_JSON)
@@ -82,7 +74,6 @@ class NotificationIntegrationTest {
 		String lastCode = codeFor(groupId, CY);
 		GREEN_MAIL.purgeEmailFromAllMailboxes();
 
-		// the last submission closes the round: all participants get the aggregate
 		mockMvc.perform(post("/api/v1/groups/{id}/rounds/current/submissions", groupId)
 				.contentType(MediaType.APPLICATION_JSON).content(body(CY, lastCode, 1)))
 				.andExpect(status().isOk());
@@ -102,12 +93,11 @@ class NotificationIntegrationTest {
 		String code = codeFor(groupId, ANN);
 		mockMvc.perform(post("/api/v1/groups/{id}/rounds", groupId).contentType(MediaType.APPLICATION_JSON)
 				.content(body(ANN, code))).andExpect(status().isCreated());
-		awaitMails(3); // code mail + 2 start notifications
+		awaitMails(3);
 		GREEN_MAIL.purgeEmailFromAllMailboxes();
 
 		submit(groupId, ANN, 1).andExpect(status().isOk());
 
-		// only the verification code mail for that submission, no "round complete" mail
 		assertThat(Arrays.stream(GREEN_MAIL.getReceivedMessages()).map(this::subjectOf))
 				.noneMatch(subject -> subject.contains("Mood round complete"));
 	}
@@ -144,7 +134,6 @@ class NotificationIntegrationTest {
 		return JsonPath.read(response, "$.id");
 	}
 
-	/** Requests a code and reads it from the mail that arrives. */
 	private String codeFor(String groupId, String email) throws Exception {
 		GREEN_MAIL.purgeEmailFromAllMailboxes();
 		mockMvc.perform(post("/api/v1/groups/{id}/verification-codes", groupId)

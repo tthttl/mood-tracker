@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -29,12 +29,12 @@ import { CreateGroupForm } from './create-group-form';
         <mat-card-subtitle>Or use the address someone shared with you</mat-card-subtitle>
       </mat-card-header>
       <mat-card-content>
-        <form class="row" (ngSubmit)="open()">
+        <form class="row" [formGroup]="form" (ngSubmit)="open()">
           <mat-form-field class="grow">
             <mat-label>Group id</mat-label>
-            <input matInput [formControl]="groupId" />
+            <input matInput formControlName="groupId" />
           </mat-form-field>
-          <button mat-stroked-button type="submit" class="open" [disabled]="groupId.invalid">Open</button>
+          <button mat-stroked-button type="submit" class="open" [disabled]="form.invalid">Open</button>
         </form>
       </mat-card-content>
     </mat-card>
@@ -48,11 +48,13 @@ import { CreateGroupForm } from './create-group-form';
 export class HomePage {
   private readonly router = inject(Router);
 
-  protected readonly groupId = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] });
+  protected readonly form = new FormGroup({
+    groupId: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/\S/)] }),
+  });
 
   protected open(): void {
-    if (this.groupId.valid) {
-      void this.router.navigate(['/groups', this.groupId.value.trim()]);
+    if (this.form.valid) {
+      void this.router.navigate(['/groups', this.form.controls.groupId.value.trim()]);
     }
   }
 }

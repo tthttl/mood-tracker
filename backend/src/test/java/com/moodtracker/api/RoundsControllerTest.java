@@ -44,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(RoundsController.class)
 class RoundsControllerTest {
-
 	private static final Instant STARTED = Instant.parse("2026-09-01T10:00:00Z");
 	private static final Instant CLOSED = Instant.parse("2026-09-01T10:05:00Z");
 	private static final String START_BODY = """
@@ -171,7 +170,6 @@ class RoundsControllerTest {
 				.andExpect(jsonPath("$.result.max").value(1))
 				.andExpect(jsonPath("$.result.average").value(0.0))
 				.andExpect(jsonPath("$.result.submissionCount").value(2))
-				// only aggregates: no individual value anywhere in the payload
 				.andExpect(content().string(not(containsString("\"value\""))));
 	}
 

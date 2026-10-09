@@ -8,11 +8,9 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
-/** Sends plain-text mail through the SMTP server configured under {@code spring.mail.*}. */
 @Component
 @ConditionalOnProperty(name = "moodtracker.mail.provider", havingValue = "smtp")
 public class SmtpMessageSender implements MessageSender {
-
 	private final JavaMailSender mailSender;
 	private final String from;
 

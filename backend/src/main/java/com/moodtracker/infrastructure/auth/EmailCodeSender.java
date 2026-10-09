@@ -1,16 +1,15 @@
 package com.moodtracker.infrastructure.auth;
 
 import com.moodtracker.domain.auth.CodeSender;
-import com.moodtracker.domain.notification.Message;
 import com.moodtracker.domain.notification.MessageSender;
+import com.moodtracker.domain.notification.MessageTemplate;
 import org.springframework.stereotype.Component;
 
-/**
- * Delivers verification codes through whichever {@link MessageSender} is active. Sent
- * synchronously on purpose: if delivery fails the caller must know the code never left.
- */
+import java.util.Map;
+
 @Component
 public class EmailCodeSender implements CodeSender {
+	private static final MessageTemplate TEMPLATE = MessageTemplate.fromResource("verification-code");
 
 	private final MessageSender messageSender;
 
@@ -20,8 +19,7 @@ public class EmailCodeSender implements CodeSender {
 
 	@Override
 	public void send(String email, String code) {
-		messageSender.send(email, new Message("Your Mood Tracker verification code",
-				"Your verification code is " + code + ".\n\nIt expires shortly and can be used once.\n"));
+		messageSender.send(email, TEMPLATE.render(Map.of("code", code)));
 	}
 
 }

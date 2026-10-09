@@ -16,7 +16,6 @@ export function createIdentityForm() {
 
 export type IdentityForm = ReturnType<typeof createIdentityForm>;
 
-/** Email + verification code: proves the user owns an email address of the group. */
 @Component({
   selector: 'app-identity-fields',
   changeDetection: ChangeDetectionStrategy.OnPush,

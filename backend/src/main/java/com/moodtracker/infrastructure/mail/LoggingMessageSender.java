@@ -7,11 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-/** Default provider: prints messages to the log so the app runs without any mail server. */
 @Component
 @ConditionalOnProperty(name = "moodtracker.mail.provider", havingValue = "log", matchIfMissing = true)
 public class LoggingMessageSender implements MessageSender {
-
 	private static final Logger log = LoggerFactory.getLogger(LoggingMessageSender.class);
 
 	@Override

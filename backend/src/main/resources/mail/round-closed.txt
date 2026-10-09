@@ -1,0 +1,10 @@
+Subject: [{groupName}] Mood round complete
+
+Everyone in "{groupName}" has submitted, the round is complete.
+
+Lowest: {min}
+Highest: {max}
+Average: {average}
+Submissions: {submissions}
+
+See the history: {link}

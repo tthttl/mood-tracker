@@ -13,7 +13,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GroupEntityMapperTest {
-
 	@Test
 	void roundTripsAGroupWithAClosedRound() {
 		Group group = Group.create(new Name("Team A"), new MoodRange(1), List.of("a@test.com", "b@test.com"));
@@ -26,9 +25,6 @@ class GroupEntityMapperTest {
 		GroupJpaEntity entity = GroupEntityMapper.toEntity(group);
 		Group reconstructed = GroupEntityMapper.toDomain(entity);
 
-		// group/round ids are assigned by the database on save, not by this pure
-		// mapper,
-		// so a group that was never actually persisted round-trips with a null id.
 		assertThat(reconstructed.id()).isNull();
 		assertThat(reconstructed.name()).isEqualTo(new Name("Team A"));
 		assertThat(reconstructed.moodRange()).isEqualTo(new MoodRange(1));

@@ -29,7 +29,6 @@ import java.util.List;
 
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
-
 	private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
 	@ExceptionHandler(MoodTrackerException.class)
@@ -79,8 +78,6 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			case GroupNotFoundException _,NoOpenRoundException _ -> HttpStatus.NOT_FOUND;
 			case RoundAlreadyOpenException _,RoundClosedException _,RoundStillOpenException _,DuplicateSubmissionException _,DuplicateMemberException _ ->
 				HttpStatus.CONFLICT;
-			// InvalidMoodValueException, InvalidGroupConfigurationException and any future
-			// input rule
 			default -> HttpStatus.BAD_REQUEST;
 		};
 	}
