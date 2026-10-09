@@ -114,3 +114,18 @@ cd backend
 ### Tests
 
 The backend tests run without a mail server. A real SMTP conversation is covered by an in-process test server (GreenMail): `SmtpMessageSenderTest` checks the delivery of a single mail, and `NotificationIntegrationTest` runs a complete round through the API and checks who receives which mail. Run them with `cd backend && ./mvnw test`.
+
+## Next steps
+
+In suggested order:
+
+1. **Enforce the round rules in the database.** Add a unique constraint on (round, member), make sure a group can have at most one open round, and add optimistic locking. Today these rules are checked only in the domain code, so two simultaneous requests could produce a duplicate submission or two open rounds.
+2. **Keep data across restarts.** Switch H2 from in-memory to file mode (or use another database) and store verification codes durably. Currently all groups and codes are lost when the backend restarts.
+3. **Limit wrong-code attempts.** A wrong verification code does not use up the code, so a 6-digit code can be brute-forced within its 10 minutes by someone who knows the group id and a member's email. Count failed attempts and invalidate the code after a few.
+4. **Rate-limit code requests.** The endpoint always answers 204 and mails every real member it is asked for, so with a real SMTP server someone could flood a member's inbox. Limit requests per email and per client.
+5. **Let members choose round-complete notifications.** Each member has a `notifyOnRoundComplete` flag that is respected when mails are sent, but nothing can change it. Add an endpoint (confirmed with a verification code, like the other member actions) and a toggle on the group page.
+6. **Restrict read access to members.** Anyone with a group id can see its members' emails, the open round and the history. Require proof of membership to read them.
+7. **Add a creation date to groups** (`createdAt`) and show it where it is useful.
+8. **Add more notification channels** next to email by implementing the `MessageSender` port.
+9. **Decide when a round begins.** A round starts with an explicit "start round" action, which is also what triggers the "round started" mail. Consider letting it begin with the first submission instead, and move the notification trigger accordingly.
+10. **Smaller items:** purge expired verification codes, package the frontend for production (serve the built app and set up CORS), add end-to-end tests, and extend this README beyond the mail setup.
