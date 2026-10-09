@@ -25,15 +25,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Drives the whole stack (controllers, services, H2, in-memory code store) through HTTP.
- * Only the email delivery is replaced, so the test can read the codes a member would receive.
- */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(MoodTrackerApiIntegrationTest.CapturingCodeSenderConfig.class)
 class MoodTrackerApiIntegrationTest {
-
 	private static final String A = "a@test.com";
 	private static final String B = "b@test.com";
 	private static final String C = "c@test.com";
@@ -91,10 +86,8 @@ class MoodTrackerApiIntegrationTest {
 				.andExpect(jsonPath("$.rounds[0].average").value(0.0))
 				.andReturn().getResponse().getContentAsString();
 
-		// individual submissions are never revealed: no response ever carries a per-member value
 		assertThat(List.of(midRound, closing, history)).noneMatch(body -> body.contains("\"value\""));
 
-		// a new round can start once the previous one has closed
 		startRound(groupId, B).andExpect(status().isCreated());
 	}
 
@@ -236,7 +229,6 @@ class MoodTrackerApiIntegrationTest {
 	}
 
 	static class CapturingCodeSender implements CodeSender {
-
 		final Map<String, String> sent = new ConcurrentHashMap<>();
 
 		@Override
@@ -248,7 +240,6 @@ class MoodTrackerApiIntegrationTest {
 
 	@TestConfiguration
 	static class CapturingCodeSenderConfig {
-
 		@Bean
 		@Primary
 		CapturingCodeSender capturingCodeSender() {

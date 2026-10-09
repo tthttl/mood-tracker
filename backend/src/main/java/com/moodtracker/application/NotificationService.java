@@ -14,13 +14,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.List;
 
-/**
- * Turns round events into notifications. Runs after the transaction has committed and off the
- * request thread, so a slow or failing mail server can never affect the API call that caused it.
- */
 @Service
 public class NotificationService {
-
 	private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
 	private final MessageSender messageSender;

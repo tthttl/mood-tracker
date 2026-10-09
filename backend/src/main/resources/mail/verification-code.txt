@@ -1,0 +1,5 @@
+Subject: Your Mood Tracker verification code
+
+Your verification code is {code}.
+
+It expires shortly and can be used once.

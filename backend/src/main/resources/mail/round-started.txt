@@ -1,0 +1,5 @@
+Subject: [{groupName}] A new mood round has started
+
+{starter} started a mood round in "{groupName}".
+
+Submit your mood: {link}

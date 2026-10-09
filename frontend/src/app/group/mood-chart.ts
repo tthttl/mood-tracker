@@ -5,7 +5,6 @@ const WIDTH = 600;
 const HEIGHT = 240;
 const PLOT = { left: 44, right: 16, top: 16, bottom: 28 };
 
-/** The group's mood over time: per closed round the min-max range and the average. */
 @Component({
   selector: 'app-mood-chart',
   changeDetection: ChangeDetectionStrategy.OnPush,
